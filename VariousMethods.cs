@@ -125,4 +125,104 @@ public class VariousMethods
     }
     return fastEMABelowSlowEMA;
   }
+
+  // Buying imbalance with ratio example. Requires AddVolumetric in State.Configure
+  private bool getCurrentBarBuyingRatioValid()
+  {
+    NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType barsType = BarsArray[volumetricBar].BarsType as
+          NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType;
+
+    bool result = false;
+
+    if (barsType != null)
+    {
+      long lowAsk = barsType.Volumes[CurrentBars[volumetricBar]].GetAskVolumeForPrice(Lows[volumetricBar][0]);
+
+      long aboveLowAskValue = barsType.Volumes[CurrentBars[volumetricBar]].GetAskVolumeForPrice(Lows[volumetricBar][0] + TickSize);
+      long lowAskValue = lowAsk == 0 ? 1 : lowAsk;
+      double ratio = Convert.ToDouble(aboveLowAskValue) / Convert.ToDouble(lowAskValue);
+
+      // Below zero is heavy activity and not seen often. Strong passive to support market.
+      result = ratio < 0 || ratio > 30;
+
+      if (result)
+      {
+        Print(string.Format("Buying Current Bar: {0} | {1}", ToDay(Time[0]), ToTime(Time[0])));
+        Print(string.Format("{0} | {1} | {2}", aboveLowAskValue, lowAskValue, ratio));
+      }
+
+    }
+
+    return result;
+  }
+
+  // Buying absorption. Requires AddVolumetric in State.Configure
+  private bool getCurrentBarBuyingAbsorption()
+  {
+    NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType barsType = BarsArray[volumetricBar].BarsType as
+          NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType;
+
+    bool result = false;
+
+    if (barsType != null)
+    {
+      bool lowAskVolumeZero = barsType.Volumes[CurrentBars[volumetricBar]].GetAskVolumeForPrice(Lows[volumetricBar][0]) == 0;
+      bool lowBidVolumeAttained = barsType.Volumes[CurrentBars[volumetricBar]].GetBidVolumeForPrice(Lows[volumetricBar][0]) >= AbsorptionVolumeMin;
+
+      result = lowAskVolumeZero && lowBidVolumeAttained;
+    }
+
+    return result;
+  }
+
+  // Selling imbalance with ratio example. Requires AddVolumetric in State.Configure
+  private bool getCurrentBarSellingRatioValid()
+  {
+    NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType barsType = BarsArray[volumetricBar].BarsType as
+          NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType;
+
+    bool result = false;
+
+    if (barsType != null)
+    {
+      long highBid = barsType.Volumes[CurrentBars[volumetricBar]].GetBidVolumeForPrice(Highs[volumetricBar][0]);
+
+      long belowHighBidValue = barsType.Volumes[CurrentBars[volumetricBar]].GetBidVolumeForPrice(Highs[volumetricBar][0] - TickSize);
+      long highBidValue = highBid == 0 ? 1 : highBid;
+      double ratio = belowHighBidValue / highBidValue;
+
+      result = ratio < 0;
+
+      if (result)
+      {
+        Print(string.Format("Selling Current Bar: {0} | {1}", ToDay(Time[0]), ToTime(Time[0])));
+        Print(string.Format("{0} | {1} | {2}", highBidValue, belowHighBidValue, result));
+      }
+
+
+    }
+
+    return result;
+  }
+
+  // Selling absorption. Requires AddVolumetric in State.Configure
+  private bool getCurrentBarSellingAbsorption()
+  {
+    NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType barsType = BarsArray[volumetricBar].BarsType as
+          NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType;
+
+    bool result = false;
+
+    if (barsType != null)
+    {
+      bool highBidVolumeZero = barsType.Volumes[CurrentBars[volumetricBar]].GetBidVolumeForPrice(Highs[volumetricBar][0]) == 0;
+      bool highAskVolumeAttained = barsType.Volumes[CurrentBars[volumetricBar]].GetAskVolumeForPrice(Highs[volumetricBar][0]) >= AbsorptionVolumeMin;
+
+      result = highBidVolumeZero && highAskVolumeAttained;
+    }
+
+    return result;
+  }
+
 }
+
